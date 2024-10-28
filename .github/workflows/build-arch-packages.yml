@@ -75,11 +75,7 @@ jobs:
               pacman-key --populate archlinux
               pacman-key --populate archlinuxcn
 
-              # Install yay (an AUR helper)
-              cd /tmp
-              git clone https://aur.archlinux.org/yay.git
-              cd yay
-              makepkg -si --noconfirm
+              pacman -Syu --noconfirm
 
               # Navigate to the repository directory
               cd /repo
@@ -87,9 +83,9 @@ jobs:
               # Read package names from list.txt and build them without installing
               while IFS= read -r package || [ -n \"\$package\" ]; do
                 echo \"Building package: \$package\"
-                yay -G \"\$package\"
+                git clone https://aur.archlinux.org/${package}.git
                 cd \"\$package\"
-                makepkg -s --noconfirm
+                makepkg -si --noconfirm
                 cp *.pkg.tar.zst /output/
                 cd ..
               done < /repo/list.txt
@@ -101,11 +97,3 @@ jobs:
         with:
           name: built-packages
           path: output/*.pkg.tar.zst
-
-      # Optional Step 7: Upload Build Logs on Failure
-      - name: Upload Build Logs
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-logs
-          path: /path/to/build/logs/
