@@ -81,7 +81,7 @@ jobs:
               cd /repo
 
               # Read package names from list.txt and build them without installing
-              while IFS= read -r package || [ -n \"\$package\" ]; do
+              while IFS= read -r package ; do
                 echo \"Building package: \$package\"
                 git clone https://aur.archlinux.org/\${package}.git
                 cd \"\$package\"
