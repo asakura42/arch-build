@@ -1,0 +1,90 @@
+name: Build Arch Linux Packages
+
+# Trigger the workflow on pushes to the main branch and on pull requests
+on:
+  workflow_dispatch:
+
+jobs:
+  build-packages:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up the output directory for built packages
+      - name: Set Up Output Directory
+        run: mkdir -p output
+
+      # Step 3: Install Docker
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+
+      # Step 4: Start Docker service
+      - name: Start Docker Service
+        run: |
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      # Step 5: Build Packages in Arch Linux Container
+      - name: Build Packages in Arch Linux Container
+        run: |
+          # Pull the latest Arch Linux Docker image
+          docker pull archlinux:latest
+
+          # Run the Docker container
+          docker run --rm \
+            -v ${{ github.workspace }}:/repo \
+            -v ${{ github.workspace }}/output:/output \
+            archlinux:latest /bin/bash -c "
+              set -e
+
+              # Update package lists and upgrade system
+              pacman -Syu --noconfirm
+
+              # Install base development tools and Git
+              pacman -S --noconfirm base-devel git wget
+
+              # Add archlinuxcn repository to pacman.conf
+              echo '[archlinuxcn]' >> /etc/pacman.conf
+              echo 'Server = https://repo.archlinuxcn.org/\$arch' >> /etc/pacman.conf
+
+              # Update package lists again to include archlinuxcn
+              pacman -Syu --noconfirm
+
+              # Import PGP Keys
+              pacman -Sy --noconfirm archlinux-keyring
+              pacman -S --noconfirm archlinuxcn-keyring
+
+              # Refresh PGP keys
+              pacman-key --populate archlinux
+              pacman-key --populate archlinuxcn
+
+              # Install yay (an AUR helper)
+              cd /tmp
+              git clone https://aur.archlinux.org/yay.git
+              cd yay
+              makepkg -si --noconfirm
+
+              # Navigate to the repository directory
+              cd /repo
+
+              # Read package names from list.txt and build them
+              while IFS= read -r package || [ -n \"\$package\" ]; do
+                echo \"Building package: \$package\"
+                yay -S --noconfirm --needed --buildmenu --builddeps --noprovides \"\$package\"
+              done < /repo/list.txt
+
+              # Copy all built packages to the output directory
+              cp ~/.cache/yay/*.pkg.tar.zst /output/
+            "
+
+      # Step 6: Upload Built Packages as Artifacts
+      - name: Upload Built Packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: built-packages
+          path: output/*.pkg.tar.zst
