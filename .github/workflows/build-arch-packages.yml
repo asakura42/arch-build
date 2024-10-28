@@ -83,7 +83,7 @@ jobs:
               # Read package names from list.txt and build them without installing
               while IFS= read -r package || [ -n \"\$package\" ]; do
                 echo \"Building package: \$package\"
-                git clone https://aur.archlinux.org/${package}.git
+                git clone https://aur.archlinux.org/\${package}.git
                 cd \"\$package\"
                 makepkg -si --noconfirm
                 cp *.pkg.tar.zst /output/
