@@ -81,12 +81,15 @@ jobs:
               cd /repo
 
               # Read package names from list.txt and build them without installing
-              IFS=''
-              while read -r package ; do
+              
+              while IFS= read -r package ; do
                 echo \"Building package: \$package\"
                 git clone https://aur.archlinux.org/\${package}.git
+                echo \"\${package} CLONED\"
                 cd \"\$package\"
+                echo \"IN THE DIRECTORY \${package}\"
                 makepkg -si --noconfirm
+                echo \"\${package} BUILT\"
                 cp *.pkg.tar.zst /output/
                 cd ..
               done < /repo/list.txt
