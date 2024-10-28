@@ -75,7 +75,7 @@ jobs:
               # Read package names from list.txt and build them
               while IFS= read -r package || [ -n \"\$package\" ]; do
                 echo \"Building package: \$package\"
-                yay -S --noconfirm --needed --buildmenu --builddeps --noprovides \"\$package\"
+                yay -S --noconfirm --needed \"\$package\"
               done < /repo/list.txt
 
               # Copy all built packages to the output directory
