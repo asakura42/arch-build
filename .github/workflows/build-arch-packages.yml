@@ -19,15 +19,8 @@ jobs:
 
       # Step 3: Install Docker
       - name: Install Docker
-        run: |
-          sudo apt-get update
-          # sudo apt-get install -y docker.io
+        run: sudo apt-get update
 
-      # Step 4: Start Docker service
-      - name: Start Docker Service
-        run: |
-          # sudo systemctl start docker
-          # sudo systemctl enable docker
 
       # Step 5: Build Packages in Arch Linux Container
       - name: Build Packages in Arch Linux Container
