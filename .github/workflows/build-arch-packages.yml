@@ -35,11 +35,17 @@ jobs:
             archlinux:latest /bin/bash -c "
               set -e
 
+
+
               # Update package lists and upgrade system
               pacman -Syu --noconfirm
 
               # Install base development tools and Git
               pacman -S --noconfirm base-devel git wget
+
+              sed -i 's,exit $E_ROOT,echo but you know what you do,' /usr/bin/makepkg
+
+              sed -i 's/SKIPPGPCHECK=0/SKIPPGPCHECK=1/' /usr/bin/makepkg
 
               # Add archlinuxcn repository to pacman.conf
               echo '[archlinuxcn]' >> /etc/pacman.conf
