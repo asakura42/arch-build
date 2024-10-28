@@ -45,7 +45,8 @@ jobs:
             -v ${{ github.workspace }}:/repo \
             -v ${{ github.workspace }}/output:/output \
             archlinux:latest /bin/bash -c "
-              
+
+              set -x
 
 
               sed -i 's,exit $E_ROOT,echo but you know what you do,' /usr/bin/makepkg
@@ -81,6 +82,13 @@ jobs:
               cd /repo
 
               # Read package names from list.txt and build them without installing
+
+              echo \"PACKAGELIST\"
+
+              while IFS= read -r package ; do
+                echo \"Building package: \$package\"
+              done < /repo/list.txt
+
               
               while IFS= read -r package ; do
                 echo \"Building package: \$package\"
