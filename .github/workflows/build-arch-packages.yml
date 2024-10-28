@@ -1,6 +1,6 @@
 name: Build Arch Linux Packages
 
-# Trigger the workflow on pushes to the main branch and on pull requests
+# Trigger the workflow manually
 on:
   workflow_dispatch:
 
@@ -17,12 +17,24 @@ jobs:
       - name: Set Up Output Directory
         run: mkdir -p output
 
-      # Step 3: Install Docker
-      - name: Install Docker
-        run: sudo apt-get update
+      # Step 3: Cache yay and dependencies to speed up builds
+      - name: Cache yay and dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/yay
+            /var/cache/pacman/pkg
+          key: ${{ runner.os }}-yay-${{ hashFiles('list.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-yay-
 
+      # Step 4: Verify Docker is running
+      - name: Verify Docker Service
+        run: |
+          docker info
+          # Docker is pre-installed and should be running on ubuntu-latest
 
-      # Step 5: Build Packages in Arch Linux Container
+      # Step 5: Build Packages in Arch Linux Container without installing them
       - name: Build Packages in Arch Linux Container
         run: |
           # Pull the latest Arch Linux Docker image
@@ -36,16 +48,17 @@ jobs:
               set -e
 
 
-
-              # Update package lists and upgrade system
-              pacman -Syu --noconfirm
-
-              # Install base development tools and Git
-              pacman -S --noconfirm base-devel git wget
-
               sed -i 's,exit $E_ROOT,echo but you know what you do,' /usr/bin/makepkg
 
               sed -i 's/SKIPPGPCHECK=0/SKIPPGPCHECK=1/' /usr/bin/makepkg
+
+
+              # Update package lists and upgrade system
+              pacman -Syu --noconfirm
+              pacman-key --init
+
+              # Install base development tools and Git
+              pacman -S --noconfirm base-devel git wget
 
               # Add archlinuxcn repository to pacman.conf
               echo '[archlinuxcn]' >> /etc/pacman.conf
@@ -53,7 +66,6 @@ jobs:
 
               # Update package lists again to include archlinuxcn
               pacman -Syu --noconfirm
-              pacman-key --init
 
               # Import PGP Keys
               pacman -Sy --noconfirm archlinux-keyring
@@ -72,14 +84,15 @@ jobs:
               # Navigate to the repository directory
               cd /repo
 
-              # Read package names from list.txt and build them
+              # Read package names from list.txt and build them without installing
               while IFS= read -r package || [ -n \"\$package\" ]; do
                 echo \"Building package: \$package\"
-                yay -S --noconfirm --needed \"\$package\"
+                yay -G \"\$package\"
+                cd \"\$package\"
+                makepkg -s --noconfirm
+                cp *.pkg.tar.zst /output/
+                cd ..
               done < /repo/list.txt
-
-              # Copy all built packages to the output directory
-              cp ~/.cache/yay/*.pkg.tar.zst /output/
             "
 
       # Step 6: Upload Built Packages as Artifacts
@@ -88,3 +101,11 @@ jobs:
         with:
           name: built-packages
           path: output/*.pkg.tar.zst
+
+      # Optional Step 7: Upload Build Logs on Failure
+      - name: Upload Build Logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-logs
+          path: /path/to/build/logs/
