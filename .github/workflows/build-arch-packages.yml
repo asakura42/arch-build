@@ -47,6 +47,7 @@ jobs:
 
               # Update package lists again to include archlinuxcn
               pacman -Syu --noconfirm
+              pacman-key --init
 
               # Import PGP Keys
               pacman -Sy --noconfirm archlinux-keyring
